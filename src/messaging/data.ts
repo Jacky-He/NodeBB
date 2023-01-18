@@ -1,16 +1,14 @@
-'use strict';
+import validator = require('validator');
 
-const validator = require('validator');
+import db = require('../database');
+import user = require('../user');
+import utils = require('../utils');
+import plugins = require('../plugins');
 
-const db = require('../database');
-const user = require('../user');
-const utils = require('../utils');
-const plugins = require('../plugins');
-
-const intFields = ['timestamp', 'edited', 'fromuid', 'roomId', 'deleted', 'system'];
+const intFields: string[] = ['timestamp', 'edited', 'fromuid', 'roomId', 'deleted', 'system'];
 
 module.exports = function (Messaging) {
-    Messaging.newMessageCutoff = 1000 * 60 * 3;
+    Messaging.newMessageCutoff= 1000 * 60 * 3;
 
     Messaging.getMessagesFields = async (mids, fields) => {
         if (!Array.isArray(mids) || !mids.length) {
