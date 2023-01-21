@@ -18,10 +18,9 @@ const intFields = ['timestamp', 'edited', 'fromuid', 'roomId', 'deleted', 'syste
 module.exports = function (Messaging) {
     Messaging.newMessageCutoff = 1000 * 60 * 3;
     Messaging.getMessagesFields = (mids, fields) => __awaiter(this, void 0, void 0, function* () {
-        if (!Array.isArray(mids) || !mids.length) {
-            return [];
-        }
         const keys = mids.map(mid => `message:${mid}`);
+        // The next line calls a function in a module that has not been updated to TS yet
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         const messages = yield db.getObjects(keys, fields);
         return yield Promise.all(messages.map((message, idx) => __awaiter(this, void 0, void 0, function* () { return modifyMessage(message, fields, parseInt(mids[idx], 10)); })));
     });
@@ -126,10 +125,10 @@ function modifyMessage(message, fields, mid) {
     return __awaiter(this, void 0, void 0, function* () {
         if (message) {
             db.parseIntFields(message, intFields, fields);
-            if (message.hasOwnProperty('timestamp')) {
+            if (message.timestamp !== undefined) {
                 message.timestampISO = utils.toISOString(message.timestamp);
             }
-            if (message.hasOwnProperty('edited')) {
+            if (message.edited !== undefined) {
                 message.editedISO = utils.toISOString(message.edited);
             }
         }
