@@ -1,9 +1,9 @@
 import validator from 'validator';
 
-import db = require('../database');
-import user = require('../user');
-import utils = require('../utils');
-import plugins = require('../plugins');
+import db from '../database';
+import user from '../user';
+import utils from '../utils';
+import plugins from '../plugins';
 
 const intFields: string[] = ['timestamp', 'edited', 'fromuid', 'roomId', 'deleted', 'system'];
 

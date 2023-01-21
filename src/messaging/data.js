@@ -12,25 +12,29 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 const validator_1 = __importDefault(require("validator"));
-const db = require("../database");
-const user = require("../user");
-const utils = require("../utils");
-const plugins = require("../plugins");
+// import db = require('../database');
+// import user = require('../user');
+// import utils = require('../utils');
+// import plugins = require('../plugins');
+const database_1 = __importDefault(require("../database"));
+const user_1 = __importDefault(require("../user"));
+const utils_1 = __importDefault(require("../utils"));
+const plugins_1 = __importDefault(require("../plugins"));
 const intFields = ['timestamp', 'edited', 'fromuid', 'roomId', 'deleted', 'system'];
 function modifyMessage(message, fields, mid) {
     return __awaiter(this, void 0, void 0, function* () {
         if (message) {
             // The next line calls a function in a module that has not been updated to TS yet
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-            db.parseIntFields(message, intFields, fields);
+            database_1.default.parseIntFields(message, intFields, fields);
             if (message.timestamp !== undefined) {
-                message.timestampISO = utils.toISOString(message.timestamp);
+                message.timestampISO = utils_1.default.toISOString(message.timestamp);
             }
             if (message.edited !== undefined) {
-                message.editedISO = utils.toISOString(message.edited);
+                message.editedISO = utils_1.default.toISOString(message.edited);
             }
         }
-        const payload = yield plugins.hooks.fire('filter:messaging.getFields', {
+        const payload = yield plugins_1.default.hooks.fire('filter:messaging.getFields', {
             mid: mid,
             message: message,
             fields: fields,
@@ -44,7 +48,7 @@ module.exports = function (Messaging) {
         const keys = mids.map(mid => `message:${mid}`);
         // The next line calls a function in a module that has not been updated to TS yet
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        const messages = yield db.getObjects(keys, fields);
+        const messages = yield database_1.default.getObjects(keys, fields);
         return yield Promise.all(messages.map((message, idx) => __awaiter(this, void 0, void 0, function* () { return modifyMessage(message, fields, parseInt(mids[idx], 10)); })));
     });
     Messaging.getMessageField = (mid, field) => __awaiter(this, void 0, void 0, function* () {
@@ -58,18 +62,18 @@ module.exports = function (Messaging) {
     Messaging.setMessageField = (mid, field, content) => __awaiter(this, void 0, void 0, function* () {
         // The next line calls a function in a module that has not been updated to TS yet
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        yield db.setObjectField(`message:${mid}`, field, content);
+        yield database_1.default.setObjectField(`message:${mid}`, field, content);
     });
     Messaging.setMessageFields = (mid, data) => __awaiter(this, void 0, void 0, function* () {
         // The next line calls a function in a module that has not been updated to TS yet
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        yield db.setObject(`message:${mid}`, data);
+        yield database_1.default.setObject(`message:${mid}`, data);
     });
     Messaging.getMessagesData = (mids, uid, roomId, isNew) => __awaiter(this, void 0, void 0, function* () {
         let messages = yield Messaging.getMessagesFields(mids, []);
         // The next line calls a function in a module that has not been updated to TS yet
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        messages = (yield user.blocks.filter(uid, 'fromuid', messages));
+        messages = (yield user_1.default.blocks.filter(uid, 'fromuid', messages));
         messages = messages
             .map((msg, idx) => {
             if (msg) {
@@ -81,7 +85,7 @@ module.exports = function (Messaging) {
             .filter(Boolean);
         // The next line calls a function in a module that has not been updated to TS yet
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        const users = yield user.getUsersFields(messages.map(msg => msg && msg.fromuid), ['uid', 'username', 'userslug', 'picture', 'status', 'banned']);
+        const users = yield user_1.default.getUsersFields(messages.map(msg => msg && msg.fromuid), ['uid', 'username', 'userslug', 'picture', 'status', 'banned']);
         messages.forEach((message, index) => {
             message.fromUser = users[index];
             message.fromUser.banned = !!message.fromUser.banned;
@@ -96,12 +100,12 @@ module.exports = function (Messaging) {
         messages = yield Promise.all(messages.map((message) => __awaiter(this, void 0, void 0, function* () {
             if (message.system) {
                 message.content = validator_1.default.escape(String(message.content));
-                message.cleanedContent = utils.stripHTMLTags(utils.decodeHTMLEntities(message.content));
+                message.cleanedContent = utils_1.default.stripHTMLTags(utils_1.default.decodeHTMLEntities(message.content));
                 return message;
             }
             const result = yield Messaging.parse(message.content, message.fromuid, uid, roomId, isNew);
             message.content = result;
-            message.cleanedContent = utils.stripHTMLTags(utils.decodeHTMLEntities(result));
+            message.cleanedContent = utils_1.default.stripHTMLTags(utils_1.default.decodeHTMLEntities(result));
             return message;
         })));
         if (messages.length > 1) {
@@ -127,11 +131,11 @@ module.exports = function (Messaging) {
             const key = `uid:${uid}:chat:room:${roomId}:mids`;
             // The next line calls a function in a module that has not been updated to TS yet
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-            const index = yield db.sortedSetRank(key, messages[0].messageId);
+            const index = yield database_1.default.sortedSetRank(key, messages[0].messageId);
             if (index > 0) {
                 // The next line calls a function in a module that has not been updated to TS yet
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
-                const mid = yield db.getSortedSetRange(key, index - 1, index - 1);
+                const mid = yield database_1.default.getSortedSetRange(key, index - 1, index - 1);
                 const fields = yield Messaging.getMessageFields(mid, ['fromuid', 'timestamp']);
                 if ((messages[0].timestamp > fields.timestamp + Messaging.newMessageCutoff) ||
                     (messages[0].fromuid !== fields.fromuid)) {
@@ -146,7 +150,7 @@ module.exports = function (Messaging) {
         else {
             messages = [];
         }
-        const data = yield plugins.hooks.fire('filter:messaging.getMessages', {
+        const data = yield plugins_1.default.hooks.fire('filter:messaging.getMessages', {
             messages: messages,
             uid: uid,
             roomId: roomId,
