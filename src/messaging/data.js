@@ -67,6 +67,8 @@ module.exports = function (Messaging) {
     });
     Messaging.getMessagesData = (mids, uid, roomId, isNew) => __awaiter(this, void 0, void 0, function* () {
         let messages = yield Messaging.getMessagesFields(mids, []);
+        // The next line calls a function in a module that has not been updated to TS yet
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         messages = (yield user.blocks.filter(uid, 'fromuid', messages));
         messages = messages
             .map((msg, idx) => {

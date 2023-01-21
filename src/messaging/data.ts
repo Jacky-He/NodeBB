@@ -214,13 +214,13 @@ export = function (Messaging : MessagingInfo) {
             messages = [];
         }
 
-        const data : MessagesWrapper = await plugins.hooks.fire('filter:messaging.getMessages', {
+        const data : MessagesWrapper | null = await plugins.hooks.fire('filter:messaging.getMessages', {
             messages: messages,
             uid: uid,
             roomId: roomId,
             isNew: isNew,
             mids: mids,
-        }) as MessagesWrapper;
+        }) as MessagesWrapper | null;
 
         return data && data.messages;
     };
