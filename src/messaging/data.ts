@@ -49,6 +49,27 @@ interface Message {
 type MessageField = number | boolean | User | string | null
 
 
+async function modifyMessage(message: Message, fields: string [], mid: number): Promise<Message | null> {
+    if (message) {
+        db.parseIntFields(message, intFields, fields);
+        if (message.timestamp !== undefined) {
+            message.timestampISO = utils.toISOString(message.timestamp);
+        }
+        if (message.edited !== undefined) {
+            message.editedISO = utils.toISOString(message.edited);
+        }
+    }
+
+    const payload: any = await plugins.hooks.fire('filter:messaging.getFields', {
+        mid: mid,
+        message: message,
+        fields: fields,
+    });
+
+    return payload.message;
+}
+
+
 module.exports = function (Messaging : MessagingInfo) {
     Messaging.newMessageCutoff = 1000 * 60 * 3;
 
@@ -172,22 +193,3 @@ module.exports = function (Messaging : MessagingInfo) {
     };
 };
 
-async function modifyMessage(message: Message, fields: string [], mid: number): Promise<Message | null> {
-    if (message) {
-        db.parseIntFields(message, intFields, fields);
-        if (message.timestamp !== undefined) {
-            message.timestampISO = utils.toISOString(message.timestamp);
-        }
-        if (message.edited !== undefined) {
-            message.editedISO = utils.toISOString(message.edited);
-        }
-    }
-
-    const payload: any = await plugins.hooks.fire('filter:messaging.getFields', {
-        mid: mid,
-        message: message,
-        fields: fields,
-    });
-
-    return payload.message;
-}
