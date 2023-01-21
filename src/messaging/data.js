@@ -12,10 +12,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 const validator_1 = __importDefault(require("validator"));
-// import db = require('../database');
-// import user = require('../user');
-// import utils = require('../utils');
-// import plugins = require('../plugins');
 const database_1 = __importDefault(require("../database"));
 const user_1 = __importDefault(require("../user"));
 const utils_1 = __importDefault(require("../utils"));
