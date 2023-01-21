@@ -8,13 +8,36 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-const validator = require("validator");
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+const validator_1 = __importDefault(require("validator"));
 const db = require("../database");
 const user = require("../user");
 const utils = require("../utils");
 const plugins = require("../plugins");
 const intFields = ['timestamp', 'edited', 'fromuid', 'roomId', 'deleted', 'system'];
+function modifyMessage(message, fields, mid) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (message) {
+            // The next line calls a function in a module that has not been updated to TS yet
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+            db.parseIntFields(message, intFields, fields);
+            if (message.timestamp !== undefined) {
+                message.timestampISO = utils.toISOString(message.timestamp);
+            }
+            if (message.edited !== undefined) {
+                message.editedISO = utils.toISOString(message.edited);
+            }
+        }
+        const payload = yield plugins.hooks.fire('filter:messaging.getFields', {
+            mid: mid,
+            message: message,
+            fields: fields,
+        });
+        return payload.message;
+    });
+}
 module.exports = function (Messaging) {
     Messaging.newMessageCutoff = 1000 * 60 * 3;
     Messaging.getMessagesFields = (mids, fields) => __awaiter(this, void 0, void 0, function* () {
@@ -33,14 +56,18 @@ module.exports = function (Messaging) {
         return messages ? messages[0] : null;
     });
     Messaging.setMessageField = (mid, field, content) => __awaiter(this, void 0, void 0, function* () {
+        // The next line calls a function in a module that has not been updated to TS yet
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         yield db.setObjectField(`message:${mid}`, field, content);
     });
     Messaging.setMessageFields = (mid, data) => __awaiter(this, void 0, void 0, function* () {
+        // The next line calls a function in a module that has not been updated to TS yet
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         yield db.setObject(`message:${mid}`, data);
     });
     Messaging.getMessagesData = (mids, uid, roomId, isNew) => __awaiter(this, void 0, void 0, function* () {
         let messages = yield Messaging.getMessagesFields(mids, []);
-        messages = yield user.blocks.filter(uid, 'fromuid', messages);
+        messages = (yield user.blocks.filter(uid, 'fromuid', messages));
         messages = messages
             .map((msg, idx) => {
             if (msg) {
@@ -50,6 +77,8 @@ module.exports = function (Messaging) {
             return msg;
         })
             .filter(Boolean);
+        // The next line calls a function in a module that has not been updated to TS yet
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         const users = yield user.getUsersFields(messages.map(msg => msg && msg.fromuid), ['uid', 'username', 'userslug', 'picture', 'status', 'banned']);
         messages.forEach((message, index) => {
             message.fromUser = users[index];
@@ -64,7 +93,7 @@ module.exports = function (Messaging) {
         });
         messages = yield Promise.all(messages.map((message) => __awaiter(this, void 0, void 0, function* () {
             if (message.system) {
-                message.content = validator.escape(String(message.content));
+                message.content = validator_1.default.escape(String(message.content));
                 message.cleanedContent = utils.stripHTMLTags(utils.decodeHTMLEntities(message.content));
                 return message;
             }
@@ -94,8 +123,12 @@ module.exports = function (Messaging) {
         else if (messages.length === 1) {
             // For single messages, we don't know the context, so look up the previous message and compare
             const key = `uid:${uid}:chat:room:${roomId}:mids`;
+            // The next line calls a function in a module that has not been updated to TS yet
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
             const index = yield db.sortedSetRank(key, messages[0].messageId);
             if (index > 0) {
+                // The next line calls a function in a module that has not been updated to TS yet
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
                 const mid = yield db.getSortedSetRange(key, index - 1, index - 1);
                 const fields = yield Messaging.getMessageFields(mid, ['fromuid', 'timestamp']);
                 if ((messages[0].timestamp > fields.timestamp + Messaging.newMessageCutoff) ||
@@ -121,22 +154,3 @@ module.exports = function (Messaging) {
         return data && data.messages;
     });
 };
-function modifyMessage(message, fields, mid) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (message) {
-            db.parseIntFields(message, intFields, fields);
-            if (message.timestamp !== undefined) {
-                message.timestampISO = utils.toISOString(message.timestamp);
-            }
-            if (message.edited !== undefined) {
-                message.editedISO = utils.toISOString(message.edited);
-            }
-        }
-        const payload = yield plugins.hooks.fire('filter:messaging.getFields', {
-            mid: mid,
-            message: message,
-            fields: fields,
-        });
-        return payload.message;
-    });
-}
